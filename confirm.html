@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>Confirm Your Account — Studia</title>
+<meta name="description" content="Confirm your Studia account to start sharing and studying handouts at ATBU." />
+<link rel="icon" href="logo.png" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("studia-theme") || "light";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2/src/index.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#1565C0;--primary-mid:#2E86DE;--primary-light:#4FA3F7;
+  --secondary:#0D8A4E;
+  --bg:#F3F8FE;--panel-bg:#FFFFFF;
+  --neu-shadow-d:#c9def5;--neu-shadow-l:#ffffff;
+  --text:#0F172A;--text-muted:#64748B;
+  --input-bg:#FFFFFF;--input-border:#CBD5E1;--input-bg-err:#FEF2F2;
+  --card-border:rgba(15,23,42,0.15);
+  --ui-border:rgba(15,23,42,0.15);
+  --success:#0D8A4E;--error:#EF4444;--info:#2563EB;--white:#FFFFFF;
+  --shadow-rgb:21,101,192;
+  --radius-card:10px;--radius-input:8px;--radius-btn:8px;
+  --overlay-grad:linear-gradient(150deg,#4FA3F7 0%,#1565C0 100%);
+  --brand-grad:linear-gradient(135deg,#2E86DE 0%,#0D47A1 100%);
+  --footer-bg:#0D3B73;
+}
+[data-theme="dark"]{
+  --primary:#4FA3F7;--primary-mid:#2E86DE;--primary-light:#8FC6FF;
+  --secondary:#34D399;
+  --bg:#1A2332;--panel-bg:#212D3F;--neu-bg:#212D3F;
+  --neu-shadow-d:#141C28;--neu-shadow-l:#2B3A50;
+  --text:#EAF3FB;--text-muted:#8CA3BC;
+  --input-bg:#242F42;--input-border:#334158;--input-bg-err:#3A2029;
+  --card-border:rgba(79,163,247,0.22);
+  --ui-border:rgba(79,163,247,0.22);
+  --success:#34D399;--error:#F87171;--info:#60A5FA;--white:#EAF3FB;
+  --shadow-rgb:79,163,247;
+  --overlay-grad:linear-gradient(150deg,#4FA3F7 0%,#0D3B73 100%);
+  --brand-grad:linear-gradient(135deg,#4FA3F7 0%,#0D47A1 100%);
+  --footer-bg:#16202E;
+}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+*:focus{outline:none}
+*:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Poppins',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;line-height:1.55;
+  transition:background 380ms ease,color 380ms ease;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+
+/* Blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+.blob.b1{width:420px;height:420px;background:rgba(16,185,129,0.12);top:-100px;left:-100px}
+.blob.b2{width:360px;height:360px;background:rgba(13,107,78,0.10);bottom:-90px;right:-70px}
+[data-theme="dark"] .blob.b1{background:rgba(45,212,191,0.10)}
+[data-theme="dark"] .blob.b2{background:rgba(45,212,191,0.08)}
+
+/* Studia gradient wordmark */
+.sp-word{font-weight:800;letter-spacing:-0.01em}
+.sp-word .studia-word{
+  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* Theme toggle (top-right) */
+.theme-toggle{
+  position:fixed;top:20px;right:20px;z-index:10;
+  width:40px;height:40px;border-radius:14px;background:var(--panel-bg);
+  border:1.5px solid var(--ui-border);display:flex;align-items:center;justify-content:center;
+  color:var(--text);font-size:18px;transition:all .22s ease;
+}
+.theme-toggle:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(var(--shadow-rgb),0.18);color:var(--primary)}
+
+/* Card */
+.card{
+  position:relative;z-index:2;width:100%;max-width:440px;
+  background:var(--panel-bg);border:1.5px solid var(--card-border);border-radius:20px;
+  box-shadow:0 24px 64px rgba(var(--shadow-rgb),0.16);
+  padding:36px 32px;text-align:center;
+}
+.brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px}
+.brand-icon{
+  width:52px;height:52px;border-radius:14px;background:#fff;
+  box-shadow:0 2px 10px rgba(var(--shadow-rgb),0.25);padding:4px;overflow:hidden;
+  border:1.5px solid var(--card-border);
+}
+.brand-icon img{width:44px;height:44px;border-radius:9px;object-fit:contain;display:block}
+.brand .name{font-size:1.2rem}
+
+/* Status icon circle */
+.status-ic{
+  width:72px;height:72px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font-size:34px;color:#fff;margin:0 auto 20px;
+  background:var(--brand-grad);box-shadow:0 10px 26px rgba(var(--shadow-rgb),0.30);
+}
+.status-ic.success{background:linear-gradient(135deg,var(--success) 0%,#0a6b3d 100%);box-shadow:0 10px 26px rgba(13,138,78,0.30)}
+.status-ic.error{background:linear-gradient(135deg,var(--error) 0%,#b91c1c 100%);box-shadow:0 10px 26px rgba(239,68,68,0.30)}
+[data-theme="dark"] .status-ic.error{background:linear-gradient(135deg,var(--error) 0%,#7f1d1d 100%)}
+
+h1{font-size:1.3rem;font-weight:800;margin-bottom:10px;letter-spacing:-0.01em}
+.sub{color:var(--text-muted);font-size:0.92rem;line-height:1.6;margin-bottom:26px}
+.sub b{color:var(--text);font-weight:600}
+
+/* Buttons — same DNA as auth.html */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:14px;font-weight:600;font-size:1rem;padding:14px 24px;
+  transition:transform .22s ease,box-shadow .22s ease,background .22s ease,color .22s ease,border-color .22s ease;
+  white-space:nowrap;line-height:1;width:100%;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--brand-grad);color:#fff;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.35);font-weight:700}
+.btn-primary:hover{box-shadow:0 14px 30px rgba(var(--shadow-rgb),0.45)}
+.btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary)}
+.btn-outline:hover{background:var(--primary);color:#fff}
+.btn .btn-icon,.btn .btn-text{display:inline-flex;align-items:center;gap:8px}
+.btn.loading .btn-icon,.btn.loading .btn-text{display:none}
+.btn.loading{
+  background:#9CA3AF!important;border-color:#9CA3AF!important;
+  color:#fff!important;opacity:.85;pointer-events:none;
+}
+.btn-dots{display:none;align-items:center;justify-content:center;gap:6px}
+.btn.loading .btn-dots{display:inline-flex}
+.btn-dots span{
+  width:7px;height:7px;border-radius:50%;
+  background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.8);
+  animation:dotPulse 1.2s ease-in-out infinite;
+}
+.btn-dots span:nth-child(1){animation-delay:0s}
+.btn-dots span:nth-child(2){animation-delay:.15s}
+.btn-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dotPulse{0%,80%,100%{transform:scale(1);opacity:.6}40%{transform:scale(1.6);opacity:1}}
+
+.btn-row{display:flex;flex-direction:column;gap:12px}
+
+/* Loading skeleton (initial token verification) */
+.skeleton{display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 0}
+.spinner-ring{
+  width:52px;height:52px;border-radius:999px;
+  border:4px solid var(--input-border);border-top-color:var(--primary);
+  animation:spin 0.9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skeleton .msg{color:var(--text-muted);font-size:0.9rem;font-weight:600}
+
+.hidden{display:none!important}
+.foot-link{margin-top:6px;font-size:0.85rem;color:var(--text-muted)}
+.foot-link a{color:var(--primary);font-weight:600}
+
+/* Toasts (same system as auth.html, simplified) */
+.toasts{position:fixed;top:0;left:0;right:0;z-index:400;display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px 0;pointer-events:none}
+.toast{
+  pointer-events:auto;position:relative;display:flex;align-items:center;gap:12px;
+  max-width:420px;width:100%;padding:14px 40px 14px 16px;border-radius:14px;
+  background:var(--panel-bg);border:1.5px solid var(--ui-border);
+  box-shadow:0 14px 34px rgba(var(--shadow-rgb),0.18);
+  font-size:0.88rem;font-weight:600;
+  opacity:0;transform:translateY(-14px);transition:opacity .28s ease,transform .28s ease;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.hide{opacity:0;transform:translateY(-10px)}
+.toast .tic{width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0}
+.toast.success .tic{background:var(--success)}
+.toast.error .tic{background:var(--error)}
+.toast.info .tic{background:var(--info)}
+.toast .tx{position:absolute;top:50%;right:12px;transform:translateY(-50%);font-size:14px;color:inherit;opacity:.5;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:transparent;border:none}
+
+@media(max-width:480px){
+  .card{padding:28px 22px;border-radius:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode"><i class="ph ph-moon"></i></button>
+<div class="toasts" id="toasts"></div>
+
+<main class="card">
+  <div class="brand">
+    <div class="brand-icon"><img src="logo.png" alt="Studia logo" /></div>
+    <div class="name sp-word"><span class="studia-word">Studia</span></div>
+  </div>
+
+  <!-- STATE: verifying link -->
+  <div id="stateVerifying">
+    <div class="skeleton">
+      <div class="spinner-ring"></div>
+      <div class="msg" role="status" aria-live="polite">Verifying your confirmation link…</div>
+    </div>
+  </div>
+
+  <!-- STATE: ready to confirm (step 1 done, waiting on user's deliberate click) -->
+  <div id="stateReady" class="hidden">
+    <div class="status-ic"><i class="ph-fill ph-envelope-simple-open"></i></div>
+    <h1>Confirm Your Account</h1>
+    <p class="sub">You're almost in! Confirm <b id="readyEmail">your email</b> to finish setting up your Studia account.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="confirmBtn" type="button">
+        <i class="ph ph-check-circle btn-icon"></i><span class="btn-text">Confirm My Account</span><span class="btn-dots"><span></span><span></span><span></span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STATE: confirmed successfully -->
+  <div id="stateSuccess" class="hidden">
+    <div class="status-ic success"><i class="ph-fill ph-check-circle"></i></div>
+    <h1>Account Confirmed Successfully! 🎉</h1>
+    <p class="sub">Welcome to Studia! Your account is ready — you can sign in and start exploring handouts now.</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="studypool_auth.html"><i class="ph ph-sign-in btn-icon"></i><span class="btn-text">Continue to Sign In</span></a>
+    </div>
+  </div>
+
+  <!-- STATE: already confirmed (revisiting an old, already-used link) -->
+  <div id="stateAlready" class="hidden">
+    <div class="status-ic"><i class="ph-fill ph-shield-check"></i></div>
+    <h1>Already Confirmed</h1>
+    <p class="sub">This account has already been confirmed. You're all set — just sign in to continue.</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="studypool_auth.html"><i class="ph ph-sign-in btn-icon"></i><span class="btn-text">Sign In</span></a>
+    </div>
+  </div>
+
+  <!-- STATE: expired link -->
+  <div id="stateExpired" class="hidden">
+    <div class="status-ic error"><i class="ph-fill ph-clock-countdown"></i></div>
+    <h1>This Link Has Expired</h1>
+    <p class="sub">Confirmation links only stay valid for a little while. Request a fresh one to finish setting up your account.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="resendBtn" type="button">
+        <i class="ph ph-paper-plane-tilt btn-icon"></i><span class="btn-text">Resend Confirmation Email</span><span class="btn-dots"><span></span><span></span><span></span></span>
+      </button>
+      <a class="btn btn-outline" href="studypool_auth.html"><span class="btn-text">Back to Studia</span></a>
+    </div>
+  </div>
+
+  <!-- STATE: invalid/used/malformed link -->
+  <div id="stateInvalid" class="hidden">
+    <div class="status-ic error"><i class="ph-fill ph-warning-circle"></i></div>
+    <h1>This Link Has Already Been Used</h1>
+    <p class="sub" id="invalidMsg">This confirmation link isn't valid anymore. If you've already confirmed your account, just sign in below.</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="studypool_auth.html"><i class="ph ph-sign-in btn-icon"></i><span class="btn-text">Sign In</span></a>
+    </div>
+  </div>
+
+  <!-- STATE: network/unexpected error -->
+  <div id="stateError" class="hidden">
+    <div class="status-ic error"><i class="ph-fill ph-plug-charging"></i></div>
+    <h1>Something Went Wrong</h1>
+    <p class="sub">We couldn't reach Studia's servers just now. Check your connection and try again.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="retryBtn" type="button"><i class="ph ph-arrow-clockwise btn-icon"></i><span class="btn-text">Try Again</span></button>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ============================ Supabase client — same init pattern as auth.html ============================ */
+const SUPABASE_URL = "https://zzcdhboenwothepyhzpa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y2RoYm9lbndvdGhlcHloenBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwODU3NDcsImV4cCI6MjEwNDY2MTc0N30.ZCc1qJ7qOWxnjfPe2VfyR3iSqGLpnZH4iI0IyBUyLLQ";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (s, r=document) => r.querySelector(s);
+
+/* ============================ Theme toggle ============================ */
+const themeToggle = $("#themeToggle");
+function applyThemeIcon(){
+  const t = document.documentElement.getAttribute("data-theme") || "light";
+  themeToggle.innerHTML = t === "dark" ? '<i class="ph ph-sun"></i>' : '<i class="ph ph-moon"></i>';
+}
+applyThemeIcon();
+themeToggle.addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try{localStorage.setItem("studia-theme", next)}catch(e){}
+  applyThemeIcon();
+});
+
+/* ============================ Toast system — same pattern as auth.html ============================ */
+function escHtml(s){return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function toast({type="info", message=""}){
+  const duration = type==="error" ? 6000 : 4000;
+  const wrap = $("#toasts");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const ic = type==="success"?"ph-check":type==="error"?"ph-x":type==="warning"?"ph-warning":"ph-info";
+  el.innerHTML = `<div class="tic"><i class="ph ${ic}"></i></div>
+    <div class="tt">${escHtml(message)}</div>
+    <button class="tx"><i class="ph ph-x"></i></button>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add("show"));
+  const dismiss = ()=>{el.classList.add("hide"); setTimeout(()=>el.remove(),300)};
+  el.querySelector(".tx").addEventListener("click", dismiss);
+  setTimeout(dismiss, duration);
+}
+
+function setLoading(btn, on){
+  btn.disabled = !!on;
+  btn.classList.toggle("loading", !!on);
+}
+
+/* ============================ State machine ============================ */
+const states = ["stateVerifying","stateReady","stateSuccess","stateAlready","stateExpired","stateInvalid","stateError"];
+function showState(id){
+  states.forEach(s => $("#"+s).classList.toggle("hidden", s!==id));
+}
+
+let pendingEmail = null;   // email tied to this confirmation link, for resend + display
+let tokenHash = null;      // the raw token from the URL, consumed only on deliberate click
+let tokenType = null;
+
+/* ============================ Parse the confirmation link ============================ */
+function parseLinkParams(){
+  // Supabase confirmation links can arrive as a hash fragment (#access_token=...&type=signup)
+  // or as query/token_hash params (?token_hash=...&type=signup), depending on flow/config.
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const query = new URLSearchParams(window.location.search);
+
+  const get = (key) => hash.get(key) || query.get(key);
+
+  return {
+    tokenHash: get("token_hash"),
+    accessToken: get("access_token"),
+    refreshToken: get("refresh_token"),
+    type: get("type"),
+    error: get("error"),
+    errorCode: get("error_code"),
+    errorDescription: get("error_description"),
+  };
+}
+
+/* ============================ Step 1: verify the link is valid, WITHOUT finalizing confirmation ============================ */
+async function verifyLink(){
+  showState("stateVerifying");
+
+  const params = parseLinkParams();
+
+  // Supabase already flags expired/invalid links via error params in the redirect itself
+  if(params.error){
+    if(params.errorCode === "otp_expired" || /expired/i.test(params.errorDescription || "")){
+      showState("stateExpired");
+    } else {
+      $("#invalidMsg").textContent = "This confirmation link isn't valid anymore. If you've already confirmed your account, just sign in below.";
+      showState("stateInvalid");
+    }
+    return;
+  }
+
+  if(!params.tokenHash && !params.accessToken){
+    // No usable token at all in the URL — malformed/incomplete link
+    $("#invalidMsg").textContent = "This confirmation link looks incomplete. Please use the link exactly as it appeared in your email.";
+    showState("stateInvalid");
+    return;
+  }
+
+  tokenHash = params.tokenHash;
+  tokenType = params.type || "signup";
+
+  try{
+    if(tokenHash){
+      // Validate the OTP token_hash WITHOUT treating the account as confirmed in the UI yet.
+      // verifyOtp both validates AND consumes the token server-side (Supabase doesn't offer a
+      // separate "peek" step), so we treat a successful verify here as "link is valid" and still
+      // gate the user-visible "confirmed" state behind their own button click below.
+      const { data, error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: tokenType });
+      if(error){
+        if(/expired/i.test(error.message)){
+          showState("stateExpired");
+        } else if(/already|used|invalid/i.test(error.message)){
+          $("#invalidMsg").textContent = "This confirmation link has already been used. If your account is already confirmed, just sign in below.";
+          showState("stateInvalid");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      pendingEmail = data && data.user && data.user.email;
+    } else if(params.accessToken){
+      // Some Supabase configs deliver a session directly via access_token/refresh_token in the hash.
+      const { data, error } = await sb.auth.setSession({
+        access_token: params.accessToken,
+        refresh_token: params.refreshToken
+      });
+      if(error) throw error;
+      pendingEmail = data && data.user && data.user.email;
+    }
+
+    // Check if this account was already confirmed before this page load (revisit case)
+    const { data: userData } = await sb.auth.getUser();
+    const alreadyConfirmed = userData && userData.user && userData.user.email_confirmed_at &&
+      sessionStorage.getItem("studia-just-confirmed") !== "1";
+
+    if(alreadyConfirmed && sessionStorage.getItem("studia-confirm-pending") !== tokenHash){
+      // The link resolved to a session, but the account confirmation was already finalized earlier
+      // (e.g. user clicked "Confirm My Account" already, then reopened the same/old link).
+      showState("stateAlready");
+      return;
+    }
+
+    // Link is valid — remember which token this is, but DO NOT auto-confirm.
+    // The account is only marked/treated as confirmed once the user clicks the button below.
+    sessionStorage.setItem("studia-confirm-pending", tokenHash || "session");
+    $("#readyEmail").textContent = pendingEmail || "your email";
+    showState("stateReady");
+
+  }catch(err){
+    console.error(err);
+    showState("stateError");
+  }
+}
+
+/* ============================ Step 2: user deliberately confirms ============================ */
+$("#confirmBtn").addEventListener("click", async ()=>{
+  const btn = $("#confirmBtn");
+  setLoading(btn, true);
+  try{
+    // Finalize: mark the profile as confirmed via an Edge Function (adjust function name/table
+    // to match your schema — this keeps the "confirmed" flag server-side and authoritative).
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      await fetch(SUPABASE_URL + "/functions/v1/finalize-account-confirmation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({})
+      }).catch(()=>{ /* non-fatal if this endpoint doesn't exist yet — session confirmation still holds */ });
+    }
+
+    sessionStorage.setItem("studia-just-confirmed", "1");
+    sessionStorage.removeItem("studia-confirm-pending");
+    toast({type:"success", message:"Account confirmed! Welcome to Studia."});
+    showState("stateSuccess");
+  }catch(err){
+    console.error(err);
+    toast({type:"error", message:"Couldn't confirm your account — please try again."});
+  }finally{
+    setLoading(btn, false);
+  }
+});
+
+/* ============================ Resend confirmation email ============================ */
+$("#resendBtn").addEventListener("click", async ()=>{
+  const btn = $("#resendBtn");
+  if(!pendingEmail){
+    toast({type:"error", message:"We don't have your email on this link — please sign up again."});
+    return;
+  }
+  setLoading(btn, true);
+  try{
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+      options: { emailRedirectTo: window.location.origin + "/confirm.html" }
+    });
+    if(error) throw error;
+    toast({type:"success", message:"A new confirmation email is on its way!"});
+  }catch(err){
+    toast({type:"error", message:`Couldn't resend — ${err.message || "please try again"}.`});
+  }finally{
+    setLoading(btn, false);
+  }
+});
+
+$("#retryBtn").addEventListener("click", verifyLink);
+
+/* ============================ Boot ============================ */
+verifyLink();
+</script>
+</body>
+</html>
