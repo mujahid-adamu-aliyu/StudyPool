@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>Studia — Admin</title>
+<link rel="icon" href="logo.png" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem("studia-theme") || "light";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.2/src/index.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+/* ============================================================
+   TOKENS — copied verbatim from student-dashboard.html so both
+   files match
+   ============================================================ */
+:root{
+  --primary:#1565C0;--primary-mid:#2E86DE;--primary-light:#4FA3F7;
+  --secondary:#0D8A4E;
+  --bg:#F3F8FE;--panel-bg:#FFFFFF;
+  --text:#0F172A;--text-muted:#64748B;
+  --input-bg:#FFFFFF;--input-border:#CBD5E1;--input-bg-err:#FEF2F2;
+  --card-border:rgba(15,23,42,0.15);
+  --ui-border:rgba(15,23,42,0.15);
+  --success:#0D8A4E;--error:#EF4444;--info:#2563EB;--white:#FFFFFF;
+  --shadow-rgb:21,101,192;
+  --radius-card:10px;--radius-input:8px;--radius-btn:8px;
+  --brand-grad:linear-gradient(135deg,#2E86DE 0%,#0D47A1 100%);
+}
+[data-theme="dark"]{
+  --primary:#4FA3F7;--primary-mid:#2E86DE;--primary-light:#8FC6FF;
+  --secondary:#34D399;
+  --bg:#1A2332;--panel-bg:#212D3F;
+  --text:#EAF3FB;--text-muted:#8CA3BC;
+  --input-bg:#242F42;--input-border:#334158;--input-bg-err:#3A2029;
+  --card-border:rgba(79,163,247,0.22);
+  --ui-border:rgba(79,163,247,0.22);
+  --success:#34D399;--error:#F87171;--info:#60A5FA;--white:#EAF3FB;
+  --shadow-rgb:79,163,247;
+  --brand-grad:linear-gradient(135deg,#4FA3F7 0%,#0D47A1 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+*:focus{outline:none}
+*:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+input,textarea{user-select:text;-webkit-user-select:text}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Poppins',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;line-height:1.55;
+  transition:background 380ms ease,color 380ms ease;
+  padding-bottom:78px;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;font-weight:600;font-size:1rem;padding:14px 24px;transition:transform .22s ease,box-shadow .22s ease;white-space:nowrap;line-height:1}
+.btn-primary{background:var(--brand-grad);color:#fff;font-weight:700;box-shadow:0 8px 24px rgba(var(--shadow-rgb),0.35);width:100%}
+.btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary)}
+.btn-danger{background:transparent;border:2px solid var(--error);color:var(--error)}
+.btn-danger.solid{background:var(--error);color:#fff;border-color:var(--error)}
+.btn-sm{padding:9px 14px;font-size:.8rem;border-radius:10px;width:auto}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+/* Toasts (verbatim pattern from student-dashboard.html) */
+.toasts{position:fixed;top:16px;left:0;right:0;z-index:500;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;padding:0 16px}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:420px;width:100%;padding:12px 14px;border-radius:14px;background:var(--panel-bg);border:1.5px solid var(--card-border);box-shadow:0 12px 30px rgba(0,0,0,0.18);opacity:0;transform:translateY(-14px);transition:opacity .28s ease,transform .28s ease}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.hide{opacity:0;transform:translateY(-10px)}
+.toast .tic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;color:#fff;background:var(--info)}
+.toast.success .tic{background:var(--success)}
+.toast.error .tic{background:var(--error)}
+.toast.warning .tic{background:#F59E0B}
+.toast .tt{flex:1;font-size:.88rem}
+.toast .tx{color:var(--text-muted);font-size:16px}
+
+/* TOP BAR */
+.dash-topbar{position:sticky;top:0;z-index:80;background:color-mix(in oklab,var(--panel-bg) 88%,transparent);backdrop-filter:blur(14px) saturate(160%);border-bottom:1.5px solid var(--ui-border)}
+.dash-topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 18px}
+.dash-topbar .brand{display:flex;align-items:center;gap:10px}
+.dash-topbar .brand-icon{width:32px;height:32px;border-radius:10px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.dash-topbar .brand-name{font-weight:700;font-size:.95rem}
+.dash-topbar .admin-badge{font-size:.62rem;font-weight:700;color:var(--primary);background:rgba(var(--shadow-rgb),0.12);padding:3px 8px;border-radius:20px;margin-left:6px}
+.dash-topbar .screen-title{font-weight:700;font-size:1rem}
+.dash-topbar .logout-btn{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--error)}
+.dash-topbar .logout-btn:active{background:rgba(239,68,68,0.1)}
+
+.screen{display:none;padding:16px 16px 24px;max-width:640px;margin:0 auto}
+.screen.active{display:block}
+
+/* BOTTOM TAB BAR */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:90;background:color-mix(in oklab,var(--panel-bg) 92%,transparent);backdrop-filter:blur(16px) saturate(160%);border-top:1.5px solid var(--ui-border);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:14px;color:var(--text-muted);font-size:.66rem;font-weight:600;transition:color .2s ease}
+.tab-btn i{font-size:22px}
+.tab-btn.active{color:var(--primary)}
+
+/* HERO / STATS */
+.hero-stat-card{background:var(--brand-grad);border-radius:20px;padding:22px;color:#fff;box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.30);margin-bottom:20px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.stat-card{background:var(--panel-bg);border:1.5px solid var(--card-border);border-radius:var(--radius-card);padding:16px}
+.stat-card .num{font-size:1.6rem;font-weight:800;margin-bottom:2px}
+.stat-card .lbl{font-size:.74rem;color:var(--text-muted);font-weight:600}
+
+.section-title{font-size:.95rem;font-weight:700;margin:22px 0 12px}
+.section-title:first-child{margin-top:0}
+
+.card{background:var(--panel-bg);border:1.5px solid var(--card-border);border-radius:var(--radius-card);padding:14px;margin-bottom:10px}
+.recent-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel-bg);border:1.5px solid var(--card-border);border-radius:var(--radius-card);padding:12px 14px;margin-bottom:8px}
+.recent-item .rt{font-weight:600;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-item .rs{font-size:.74rem;color:var(--text-muted)}
+
+/* Skeletons */
+.skel{background:linear-gradient(90deg,rgba(var(--shadow-rgb),0.08) 25%,rgba(var(--shadow-rgb),0.16) 37%,rgba(var(--shadow-rgb),0.08) 63%);background-size:400% 100%;animation:skel-shine 1.4s ease infinite;border-radius:8px}
+@keyframes skel-shine{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.skel-line{height:14px;margin-bottom:8px}
+.skel-card{height:74px;border-radius:var(--radius-card);margin-bottom:10px}
+
+/* Empty / error states */
+.empty-state{text-align:center;padding:48px 20px}
+.empty-state .ic{width:64px;height:64px;border-radius:50%;background:rgba(var(--shadow-rgb),0.10);display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--primary);margin:0 auto 16px}
+.empty-state h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+.empty-state p{color:var(--text-muted);font-size:.85rem;max-width:280px;margin:0 auto 20px}
+.error-state{text-align:center;padding:40px 20px}
+.error-state .ic{width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.12);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--error);margin:0 auto 14px}
+.error-state p{color:var(--text-muted);font-size:.85rem;margin-bottom:16px}
+.retry-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;border:1.5px solid var(--primary);color:var(--primary);font-weight:600;font-size:.82rem}
+.hidden{display:none !important}
+
+/* Form fields */
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:600}
+.field input,.field select{width:100%;padding:13px 14px;border-radius:var(--radius-input);border:1.5px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:.9rem}
+.field input:focus,.field select:focus{border-color:var(--primary)}
+.field.has-error input{border-color:var(--error);background:var(--input-bg-err)}
+.field-err{color:var(--error);font-size:.74rem;margin-top:5px;display:none}
+.field.has-error .field-err{display:block}
+.field-hint{font-size:.76rem;color:var(--text-muted);margin-top:6px}
+.field-warn{font-size:.78rem;color:#B45309;background:#FEF3C7;border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.4}
+[data-theme="dark"] .field-warn{background:#3A2F12;color:#FBBF24}
+.file-input-wrap{border:1.5px dashed var(--input-border);border-radius:var(--radius-input);padding:18px;text-align:center;cursor:pointer}
+.file-input-wrap.has-file{border-style:solid;border-color:var(--primary)}
+.file-input-wrap i{font-size:26px;color:var(--primary);margin-bottom:6px}
+.file-input-wrap p{font-size:.82rem;color:var(--text-muted)}
+.file-input-wrap .fname{font-weight:600;color:var(--text);font-size:.86rem;word-break:break-word}
+
+/* Search bar */
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--panel-bg);border:1.5px solid var(--input-border);border-radius:var(--radius-input);padding:11px 14px;margin-bottom:16px}
+.search-bar i{color:var(--text-muted);font-size:17px}
+.search-bar input{flex:1;border:none;background:none;font-size:.88rem;color:var(--text);padding:0}
+
+/* Content/user row cards */
+.row-card{background:var(--panel-bg);border:1.5px solid var(--card-border);border-radius:var(--radius-card);padding:14px;margin-bottom:10px}
+.row-card .rc-title{font-weight:700;font-size:.9rem;margin-bottom:4px}
+.row-card .rc-sub{font-size:.78rem;color:var(--text-muted);margin-bottom:8px}
+.row-card .rc-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.74rem;color:var(--text-muted);margin-bottom:10px}
+.row-card .rc-meta b{color:var(--text);font-weight:700}
+.row-card .rc-actions{display:flex;gap:8px}
+
+/* Confirm modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.modal-backdrop.show{opacity:1;pointer-events:auto}
+.modal-sheet{background:var(--panel-bg);border-radius:20px 20px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:640px;transform:translateY(100%);transition:transform .28s ease}
+.modal-backdrop.show .modal-sheet{transform:translateY(0)}
+.modal-sheet h3{font-size:1.02rem;font-weight:700;margin-bottom:8px}
+.modal-sheet p{font-size:.86rem;color:var(--text-muted);margin-bottom:18px;line-height:1.5}
+.modal-actions{display:flex;gap:10px}
+.modal-actions .btn{flex:1}
+
+@media (min-width:640px){
+  .modal-backdrop{align-items:center}
+  .modal-sheet{border-radius:20px;max-width:420px}
+}
+</style>
+</head>
+<body style="visibility:hidden">
+
+<div class="toasts" id="toasts"></div>
+
+<div class="dash-topbar">
+  <div class="dash-topbar-inner" id="topbarInner">
+    <div class="brand">
+      <div class="brand-icon"><i class="ph-fill ph-graduation-cap"></i></div>
+      <div class="brand-name">Studia<span class="admin-badge">ADMIN</span></div>
+    </div>
+    <button class="logout-btn" onclick="confirmLogout()" title="Log out"><i class="ph ph-sign-out"></i></button>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB 1: DASHBOARD
+     ============================================================ -->
+<div class="screen active" id="screen-dashboard">
+  <div class="hero-stat-card">
+    <div style="font-size:.8rem;opacity:.9;font-weight:600;margin-bottom:4px">Welcome back</div>
+    <div style="font-size:1.2rem;font-weight:800" id="adminNameHero">Admin</div>
+  </div>
+
+  <div id="statsLoading" class="stat-grid">
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+  </div>
+
+  <div id="statsGrid" class="stat-grid hidden">
+    <div class="stat-card"><div class="num" id="statStudents">0</div><div class="lbl">Students</div></div>
+    <div class="stat-card"><div class="num" id="statHandouts">0</div><div class="lbl">Live handouts</div></div>
+    <div class="stat-card"><div class="num" id="statDepartments">0</div><div class="lbl">Departments</div></div>
+    <div class="stat-card"><div class="num" id="statCourses">0</div><div class="lbl">Courses</div></div>
+  </div>
+
+  <div id="statsError" class="error-state hidden">
+    <div class="ic"><i class="ph-fill ph-warning-circle"></i></div>
+    <p>Couldn't load dashboard stats.</p>
+    <button class="retry-btn" onclick="loadDashboard()"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+  </div>
+
+  <div class="section-title">Recently uploaded</div>
+  <div id="recentLoading">
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+  </div>
+  <div id="recentList" class="hidden"></div>
+  <div id="recentEmpty" class="empty-state hidden">
+    <div class="ic"><i class="ph-fill ph-file-text"></i></div>
+    <h3>No handouts yet</h3>
+    <p>Upload your first handout from the Upload tab.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB 2: UPLOAD
+     ============================================================ -->
+<div class="screen" id="screen-upload">
+  <div class="section-title" style="margin-top:0">Upload a handout</div>
+
+  <form id="uploadForm" onsubmit="return false">
+    <div class="field" id="f-title">
+      <label>Handout title</label>
+      <input type="text" id="upTitle" placeholder="e.g. Introduction to Thermodynamics — Lecture 1" />
+      <div class="field-err">Please enter a title.</div>
+    </div>
+
+    <div class="field" id="f-code">
+      <label>Course code</label>
+      <input type="text" id="upCode" placeholder="e.g. CSC 101" autocomplete="off" oninput="onCourseCodeInput()" />
+      <div class="field-err">Please enter a course code.</div>
+      <div class="field-warn hidden" id="dupWarning"></div>
+    </div>
+
+    <div class="field" id="f-courseTitle">
+      <label>Course title</label>
+      <input type="text" id="upCourseTitle" placeholder="e.g. Introduction to Computer Science" />
+      <div class="field-err">Please enter a course title.</div>
+    </div>
+
+    <div class="field" id="f-faculty">
+      <label>Faculty</label>
+      <select id="upFaculty" onchange="onFacultyChange()">
+        <option value="">Select faculty…</option>
+      </select>
+      <div class="field-err">Please select a faculty.</div>
+    </div>
+
+    <div class="field" id="f-department">
+      <label>Department</label>
+      <select id="upDepartment" onchange="onCourseCodeInput()" disabled>
+        <option value="">Select faculty first…</option>
+      </select>
+      <div class="field-err">Please select a department.</div>
+    </div>
+
+    <div class="field" id="f-level">
+      <label>Level</label>
+      <select id="upLevel" onchange="onCourseCodeInput()">
+        <option value="">Select level…</option>
+        <option value="100L">100L</option>
+        <option value="200L">200L</option>
+        <option value="300L">300L</option>
+        <option value="400L">400L</option>
+        <option value="500L">500L</option>
+      </select>
+      <div class="field-err">Please select a level.</div>
+    </div>
+
+    <div class="field" id="f-semester">
+      <label>Semester</label>
+      <select id="upSemester" onchange="onCourseCodeInput()">
+        <option value="">Select semester…</option>
+        <option value="First">First Semester</option>
+        <option value="Second">Second Semester</option>
+      </select>
+      <div class="field-err">Please select a semester.</div>
+    </div>
+
+    <div class="field" id="f-file">
+      <label>PDF file (max 15MB)</label>
+      <div class="file-input-wrap" id="fileWrap" onclick="$('#upFile').click()">
+        <i class="ph ph-file-pdf"></i>
+        <p id="fileWrapText">Tap to choose a PDF</p>
+      </div>
+      <input type="file" id="upFile" accept="application/pdf" style="display:none" onchange="onFileChange()" />
+      <div class="field-err">Please choose a PDF under 15MB.</div>
+    </div>
+
+    <button class="btn btn-primary" id="uploadSubmitBtn" onclick="submitUpload()" style="margin-top:6px">
+      <i class="ph ph-upload-simple"></i> Upload handout
+    </button>
+  </form>
+</div>
+
+<!-- ============================================================
+     TAB 3: MANAGE CONTENT
+     ============================================================ -->
+<div class="screen" id="screen-content">
+  <div class="section-title" style="margin-top:0">Manage content</div>
+
+  <div class="search-bar">
+    <i class="ph ph-magnifying-glass"></i>
+    <input type="text" id="contentSearch" placeholder="Search by title or course code…" oninput="renderHandoutsList()" />
+  </div>
+
+  <div id="handoutsLoading">
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+  </div>
+  <div id="handoutsList" class="hidden"></div>
+  <div id="handoutsEmpty" class="empty-state hidden">
+    <div class="ic"><i class="ph-fill ph-file-text"></i></div>
+    <h3>No handouts found</h3>
+    <p>Try a different search, or upload a new handout.</p>
+  </div>
+  <div id="handoutsError" class="error-state hidden">
+    <div class="ic"><i class="ph-fill ph-warning-circle"></i></div>
+    <p>Couldn't load handouts.</p>
+    <button class="retry-btn" onclick="loadHandouts()"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB 4: MANAGE USERS
+     ============================================================ -->
+<div class="screen" id="screen-users">
+  <div class="section-title" style="margin-top:0">Manage students</div>
+
+  <div class="search-bar">
+    <i class="ph ph-magnifying-glass"></i>
+    <input type="text" id="userSearch" placeholder="Search by name or matric number…" oninput="renderUsersList()" />
+  </div>
+
+  <div id="usersLoading">
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+    <div class="skel skel-card"></div>
+  </div>
+  <div id="usersList" class="hidden"></div>
+  <div id="usersEmpty" class="empty-state hidden">
+    <div class="ic"><i class="ph-fill ph-users"></i></div>
+    <h3>No students found</h3>
+    <p>Try a different search.</p>
+  </div>
+  <div id="usersError" class="error-state hidden">
+    <div class="ic"><i class="ph-fill ph-warning-circle"></i></div>
+    <p>Couldn't load students.</p>
+    <button class="retry-btn" onclick="loadUsers()"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+  </div>
+</div>
+
+<!-- Bottom tab bar -->
+<div class="tabbar">
+  <button class="tab-btn active" data-tab="dashboard" onclick="goTab('dashboard')">
+    <i class="ph-fill ph-squares-four"></i>Dashboard
+  </button>
+  <button class="tab-btn" data-tab="upload" onclick="goTab('upload')">
+    <i class="ph-fill ph-upload-simple"></i>Upload
+  </button>
+  <button class="tab-btn" data-tab="content" onclick="goTab('content')">
+    <i class="ph-fill ph-file-text"></i>Content
+  </button>
+  <button class="tab-btn" data-tab="users" onclick="goTab('users')">
+    <i class="ph-fill ph-users"></i>Users
+  </button>
+</div>
+
+<!-- Generic confirm modal (used for delete + regenerate confirmations) -->
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal-sheet">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmBody">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger solid" id="confirmActionBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SUPABASE INIT — same project + constants as student-dashboard.html
+   ============================================================ */
+const SUPABASE_URL = "https://zzcdhboenwothepyhzpa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y2RoYm9lbndvdGhlcHloenBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwODU3NDcsImV4cCI6MjEwNDY2MTc0N30.ZCc1qJ7qOWxnjfPe2VfyR3iSqGLpnZH4iI0IyBUyLLQ";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+function escHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+function fmtDate(iso){
+  try{
+    return new Date(iso).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  }catch(e){ return ""; }
+}
+
+/* ============================================================
+   TOASTS — same pattern as student-dashboard.html
+   ============================================================ */
+function toast({type="info", message=""}){
+  const duration = type==="error" ? 6000 : 4000;
+  const wrap = $("#toasts");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  const ic = type==="success"?"ph-check":type==="error"?"ph-x":type==="warning"?"ph-warning":"ph-info";
+  el.innerHTML = `<div class="tic"><i class="ph ${ic}"></i></div>
+    <div class="tt">${escHtml(message)}</div>
+    <button class="tx"><i class="ph ph-x"></i></button>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add("show"));
+  const dismiss = ()=>{ el.classList.add("hide"); setTimeout(()=>el.remove(),300)};
+  el.querySelector(".tx").addEventListener("click", dismiss);
+  setTimeout(dismiss, duration);
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+let currentTab = "dashboard";
+let dashboardLoaded = false, handoutsLoaded = false, usersLoaded = false;
+
+function goTab(tab){
+  currentTab = tab;
+  $$(".screen").forEach(s=>s.classList.remove("active"));
+  $("#screen-" + tab).classList.add("active");
+  $$(".tab-btn").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+
+  if(tab==="dashboard" && !dashboardLoaded) loadDashboard();
+  if(tab==="upload" && !facultiesLoadedForUpload) loadFacultiesForUpload();
+  if(tab==="content" && !handoutsLoaded) loadHandouts();
+  if(tab==="users" && !usersLoaded) loadUsers();
+}
+
+/* ============================================================
+   CONFIRM MODAL — generic reusable helper
+   ============================================================ */
+function openConfirm(title, body, onConfirm, danger=true){
+  $("#confirmTitle").textContent = title;
+  $("#confirmBody").textContent = body;
+  const btn = $("#confirmActionBtn");
+  btn.className = danger ? "btn btn-danger solid" : "btn btn-primary";
+  const freshBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(freshBtn, btn);
+  freshBtn.addEventListener("click", async ()=>{
+    freshBtn.disabled = true;
+    freshBtn.textContent = "Working…";
+    try{
+      await onConfirm();
+      closeConfirm();
+    }catch(err){
+      freshBtn.disabled = false;
+      freshBtn.textContent = "Confirm";
+      toast({type:"error", message: err.message || "Something went wrong."});
+    }
+  });
+  freshBtn.textContent = "Confirm";
+  freshBtn.disabled = false;
+  $("#confirmModal").classList.add("show");
+}
+function closeConfirm(){
+  $("#confirmModal").classList.remove("show");
+}
+
+function confirmLogout(){
+  openConfirm(
+    "Log out?",
+    "You'll need to sign back in to access the admin panel.",
+    async ()=>{
+      await sb.auth.signOut();
+      window.location.href = "index.html";
+    },
+    false
+  );
+}
+
+/* ============================================================
+   TAB 1: DASHBOARD
+   ============================================================ */
+async function loadDashboard(){
+  $("#statsLoading").classList.remove("hidden");
+  $("#statsGrid").classList.add("hidden");
+  $("#statsError").classList.add("hidden");
+  $("#recentLoading").classList.remove("hidden");
+  $("#recentList").classList.add("hidden");
+  $("#recentEmpty").classList.add("hidden");
+
+  try{
+    const [studentsRes, handoutsRes, deptsRes, coursesRes] = await Promise.all([
+      sb.from('profiles').select('id', {count:'exact', head:true}).eq('role','student'),
+      sb.from('handouts').select('id', {count:'exact', head:true}).eq('status','live'),
+      sb.from('departments').select('id', {count:'exact', head:true}),
+      sb.from('courses').select('id', {count:'exact', head:true}),
+    ]);
+    if(studentsRes.error) throw studentsRes.error;
+    if(handoutsRes.error) throw handoutsRes.error;
+    if(deptsRes.error) throw deptsRes.error;
+    if(coursesRes.error) throw coursesRes.error;
+
+    $("#statStudents").textContent = studentsRes.count ?? 0;
+    $("#statHandouts").textContent = handoutsRes.count ?? 0;
+    $("#statDepartments").textContent = deptsRes.count ?? 0;
+    $("#statCourses").textContent = coursesRes.count ?? 0;
+
+    $("#statsLoading").classList.add("hidden");
+    $("#statsGrid").classList.remove("hidden");
+
+    const { data: recent, error: recentErr } = await sb
+      .from('handouts')
+      .select('id, title, created_at, courses(code)')
+      .order('created_at', {ascending:false})
+      .limit(5);
+    if(recentErr) throw recentErr;
+
+    $("#recentLoading").classList.add("hidden");
+    if(!recent || recent.length===0){
+      $("#recentEmpty").classList.remove("hidden");
+    }else{
+      $("#recentList").classList.remove("hidden");
+      $("#recentList").innerHTML = recent.map(h => `
+        <div class="recent-item">
+          <div style="min-width:0">
+            <div class="rt">${escHtml(h.title)}</div>
+            <div class="rs">${escHtml(h.courses ? h.courses.code : "—")}</div>
+          </div>
+          <div class="rs">${fmtDate(h.created_at)}</div>
+        </div>
+      `).join("");
+    }
+
+    dashboardLoaded = true;
+  }catch(err){
+    $("#statsLoading").classList.add("hidden");
+    $("#statsError").classList.remove("hidden");
+    $("#recentLoading").classList.add("hidden");
+  }
+}
+
+/* ============================================================
+   TAB 2: UPLOAD
+   ============================================================ */
+let facultiesLoadedForUpload = false;
+let departmentsCache = []; // all departments, filtered client-side by faculty_id
+let dupCheckTimer = null;
+let selectedFile = null;
+
+async function loadFacultiesForUpload(){
+  facultiesLoadedForUpload = true;
+  try{
+    const [facRes, deptRes] = await Promise.all([
+      sb.from('faculties').select('id, name').order('name'),
+      sb.from('departments').select('id, name, faculty_id').order('name'),
+    ]);
+    if(facRes.error) throw facRes.error;
+    if(deptRes.error) throw deptRes.error;
+
+    departmentsCache = deptRes.data || [];
+    $("#upFaculty").innerHTML = `<option value="">Select faculty…</option>` +
+      (facRes.data || []).map(f => `<option value="${f.id}">${escHtml(f.name)}</option>`).join("");
+  }catch(err){
+    toast({type:"error", message:"Couldn't load faculties/departments. Please retry from the Upload tab."});
+    facultiesLoadedForUpload = false;
+  }
+}
+
+function onFacultyChange(){
+  const facultyId = $("#upFaculty").value;
+  const deptSelect = $("#upDepartment");
+  if(!facultyId){
+    deptSelect.innerHTML = `<option value="">Select faculty first…</option>`;
+    deptSelect.disabled = true;
+    return;
+  }
+  const filtered = departmentsCache.filter(d => d.faculty_id === facultyId);
+  deptSelect.disabled = false;
+  deptSelect.innerHTML = `<option value="">Select department…</option>` +
+    filtered.map(d => `<option value="${d.id}">${escHtml(d.name)}</option>`).join("");
+  onCourseCodeInput();
+}
+
+function normalizeCourseCode(raw){
+  const stripped = String(raw||"").replace(/[\s-]/g,"");
+  const letters = (stripped.match(/[A-Za-z]+/g) || []).join("").toUpperCase();
+  const numbers = (stripped.match(/[0-9]+/g) || []).join("");
+  if(!letters && !numbers) return "";
+  return `${letters} - ${numbers}`;
+}
+
+function onCourseCodeInput(){
+  clearTimeout(dupCheckTimer);
+  const warnEl = $("#dupWarning");
+  warnEl.classList.add("hidden");
+  warnEl.textContent = "";
+
+  dupCheckTimer = setTimeout(async ()=>{
+    const rawCode = $("#upCode").value;
+    const deptId = $("#upDepartment").value;
+    const level = $("#upLevel").value;
+    const semester = $("#upSemester").value;
+
+    if(!rawCode.trim() || !deptId || !level || !semester) return; // skip silently
+
+    const normalized = normalizeCourseCode(rawCode);
+    if(!normalized || normalized === " - ") return;
+
+    try{
+      const { data, error } = await sb
+        .from('courses')
+        .select('id, code')
+        .eq('code', normalized)
+        .eq('department_id', deptId)
+        .eq('level', level)
+        .eq('semester', semester)
+        .maybeSingle();
+      if(error) throw error;
+
+      if(data){
+        warnEl.textContent = `⚠️ ${normalized} already exists for this department/level/semester — this handout will be linked to the existing course.`;
+        warnEl.classList.remove("hidden");
+      }
+    }catch(err){
+      // Silent failure on the live-check is fine — it's non-blocking by design.
+    }
+  }, 400);
+}
+
+function onFileChange(){
+  const fileInput = $("#upFile");
+  const file = fileInput.files[0];
+  const wrap = $("#fileWrap");
+  const textEl = $("#fileWrapText");
+
+  if(!file){
+    selectedFile = null;
+    wrap.classList.remove("has-file");
+    textEl.textContent = "Tap to choose a PDF";
+    return;
+  }
+
+  const maxBytes = 15 * 1024 * 1024;
+  if(file.size > maxBytes){
+    toast({type:"error", message:`"${file.name}" is over the 15MB limit. Please choose a smaller file.`});
+    fileInput.value = "";
+    selectedFile = null;
+    wrap.classList.remove("has-file");
+    textEl.textContent = "Tap to choose a PDF";
+    $("#f-file").classList.remove("has-error");
+    return;
+  }
+
+  selectedFile = file;
+  wrap.classList.add("has-file");
+  textEl.innerHTML = `<span class="fname">${escHtml(file.name)}</span>`;
+  $("#f-file").classList.remove("has-error");
+}
+
+function setFieldError(id, hasError){
+  const el = $("#"+id);
+  if(hasError) el.classList.add("has-error");
+  else el.classList.remove("has-error");
+}
+
+async function submitUpload(){
+  const title = $("#upTitle").value.trim();
+  const rawCode = $("#upCode").value.trim();
+  const courseTitle = $("#upCourseTitle").value.trim();
+  const facultyId = $("#upFaculty").value;
+  const deptId = $("#upDepartment").value;
+  const level = $("#upLevel").value;
+  const semester = $("#upSemester").value;
+
+  let hasError = false;
+  setFieldError("f-title", !title); if(!title) hasError = true;
+  setFieldError("f-code", !rawCode); if(!rawCode) hasError = true;
+  setFieldError("f-courseTitle", !courseTitle); if(!courseTitle) hasError = true;
+  setFieldError("f-faculty", !facultyId); if(!facultyId) hasError = true;
+  setFieldError("f-department", !deptId); if(!deptId) hasError = true;
+  setFieldError("f-level", !level); if(!level) hasError = true;
+  setFieldError("f-semester", !semester); if(!semester) hasError = true;
+  setFieldError("f-file", !selectedFile); if(!selectedFile) hasError = true;
+
+  if(hasError){
+    toast({type:"error", message:"Please fill in all fields and attach a PDF."});
+    return;
+  }
+  if(selectedFile.size > 15*1024*1024){
+    toast({type:"error", message:"That PDF is over the 15MB limit."});
+    return;
+  }
+
+  const normalizedCode = normalizeCourseCode(rawCode);
+  if(!normalizedCode || normalizedCode.startsWith(" -") || normalizedCode.endsWith("- ")){
+    toast({type:"error", message:"Course code must include both letters and numbers, e.g. CSC 101."});
+    return;
+  }
+
+  const btn = $("#uploadSubmitBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<i class="ph ph-circle-notch"></i> Uploading…`;
+
+  try{
+    const { data: { user } } = await sb.auth.getUser();
+    if(!user) throw new Error("You've been signed out. Please log in again.");
+
+    // Step 1: resolve or create the course
+    let courseId;
+    const { data: existingCourse, error: findErr } = await sb
+      .from('courses')
+      .select('id')
+      .eq('code', normalizedCode)
+      .eq('department_id', deptId)
+      .eq('level', level)
+      .eq('semester', semester)
+      .maybeSingle();
+    if(findErr) throw new Error("Couldn't check for an existing course: " + findErr.message);
+
+    if(existingCourse){
+      courseId = existingCourse.id;
+    }else{
+      const { data: newCourse, error: createErr } = await sb
+        .from('courses')
+        .insert({
+          code: normalizedCode,
+          title: courseTitle,
+          department_id: deptId,
+          level: level,
+          semester: semester,
+          created_by: user.id,
+        })
+        .select('id')
+        .single();
+      if(createErr) throw new Error("Couldn't create the course: " + createErr.message);
+      courseId = newCourse.id;
+    }
+
+    // Step 2: upload the PDF to storage
+    const fileExt = selectedFile.name.split('.').pop();
+    const storagePath = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${fileExt}`;
+    const { error: uploadErr } = await sb.storage.from('handouts').upload(storagePath, selectedFile, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: 'application/pdf',
+    });
+    if(uploadErr) throw new Error("Couldn't upload the PDF file: " + uploadErr.message);
+
+    const { data: publicUrlData } = sb.storage.from('handouts').getPublicUrl(storagePath);
+    const fileUrl = publicUrlData.publicUrl;
+
+    // Step 3: insert the handout row (status left to DB default = 'live')
+    const { data: newHandout, error: handoutErr } = await sb
+      .from('handouts')
+      .insert({
+        title: title,
+        department_id: deptId,
+        level: level,
+        semester: semester,
+        course_id: courseId,
+        file_url: fileUrl,
+        faculty_id: facultyId,
+        uploaded_by: user.id,
+      })
+      .select('id, department_id, level, title')
+      .single();
+    if(handoutErr) throw new Error("Couldn't save the handout: " + handoutErr.message);
+
+    // Step 4: trigger AI processing (non-blocking, don't fail the whole upload if this fails)
+    try{
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(SUPABASE_URL + "/functions/v1/process-handout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + (session ? session.access_token : SUPABASE_ANON_KEY),
+          "apikey": SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ handout_id: newHandout.id }),
+      });
+      if(!res.ok) throw new Error("Edge function returned " + res.status);
+      toast({type:"info", message:"AI processing has started for this handout."});
+    }catch(procErr){
+      toast({type:"warning", message:"Handout uploaded, but AI processing couldn't be triggered. You can retry from Manage Content."});
+    }
+
+    // Step 5: notify matching students (batched insert)
+    try{
+      const { data: matchingStudents, error: studentsErr } = await sb
+        .from('profiles')
+        .select('id')
+        .eq('role', 'student')
+        .eq('department_id', newHandout.department_id)
+        .eq('level', newHandout.level);
+      if(studentsErr) throw studentsErr;
+
+      if(matchingStudents && matchingStudents.length > 0){
+        const rows = matchingStudents.map(s => ({
+          user_id: s.id,
+          type: 'new_upload',
+          message: `A new handout was added: ${newHandout.title}`,
+          related_handout_id: newHandout.id,
+          is_read: false,
+        }));
+        const { error: notifErr } = await sb.from('notifications').insert(rows);
+        if(notifErr) throw notifErr;
+      }
+    }catch(notifErr){
+      toast({type:"warning", message:"Handout uploaded, but student notifications couldn't be sent."});
+    }
+
+    // Step 6: success — reset form, stay on tab
+    toast({type:"success", message:"Handout uploaded successfully!"});
+    $("#uploadForm").reset();
+    selectedFile = null;
+    $("#fileWrap").classList.remove("has-file");
+    $("#fileWrapText").textContent = "Tap to choose a PDF";
+    $("#upDepartment").innerHTML = `<option value="">Select faculty first…</option>`;
+    $("#upDepartment").disabled = true;
+    $("#dupWarning").classList.add("hidden");
+    $$(".field").forEach(f => f.classList.remove("has-error"));
+    dashboardLoaded = false; // force a refresh next time Dashboard is viewed
+    handoutsLoaded = false;  // force a refresh next time Manage Content is viewed
+
+  }catch(err){
+    toast({type:"error", message: err.message || "Upload failed. Please try again."});
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ph ph-upload-simple"></i> Upload handout`;
+  }
+}
+
+/* ============================================================
+   TAB 3: MANAGE CONTENT
+   ============================================================ */
+let allHandouts = [];
+
+async function loadHandouts(){
+  $("#handoutsLoading").classList.remove("hidden");
+  $("#handoutsList").classList.add("hidden");
+  $("#handoutsEmpty").classList.add("hidden");
+  $("#handoutsError").classList.add("hidden");
+
+  try{
+    const { data, error } = await sb
+      .from('handouts')
+      .select('id, title, view_count, upvote_count, created_at, level, semester, departments(name), courses(code)')
+      .eq('status', 'live')
+      .order('created_at', {ascending:false});
+    if(error) throw error;
+
+    allHandouts = data || [];
+    handoutsLoaded = true;
+    $("#handoutsLoading").classList.add("hidden");
+    renderHandoutsList();
+  }catch(err){
+    $("#handoutsLoading").classList.add("hidden");
+    $("#handoutsError").classList.remove("hidden");
+  }
+}
+
+function renderHandoutsList(){
+  const q = ($("#contentSearch").value || "").trim().toLowerCase();
+  const filtered = !q ? allHandouts : allHandouts.filter(h =>
+    (h.title||"").toLowerCase().includes(q) ||
+    (h.courses && h.courses.code || "").toLowerCase().includes(q)
+  );
+
+  if(filtered.length === 0){
+    $("#handoutsList").classList.add("hidden");
+    $("#handoutsEmpty").classList.remove("hidden");
+    return;
+  }
+  $("#handoutsEmpty").classList.add("hidden");
+  $("#handoutsList").classList.remove("hidden");
+  $("#handoutsList").innerHTML = filtered.map(h => `
+    <div class="row-card">
+      <div class="rc-title">${escHtml(h.title)}</div>
+      <div class="rc-sub">${escHtml(h.courses ? h.courses.code : "No course")} · ${escHtml(h.departments ? h.departments.name : "—")}</div>
+      <div class="rc-meta">
+        <span><b>${escHtml(h.level||"—")}</b></span>
+        <span><b>${escHtml(h.semester||"—")}</b> semester</span>
+        <span><i class="ph ph-eye"></i> ${h.view_count||0}</span>
+        <span><i class="ph ph-arrow-fat-up"></i> ${h.upvote_count||0}</span>
+        <span>${fmtDate(h.created_at)}</span>
+      </div>
+      <div class="rc-actions">
+        <button class="btn btn-outline btn-sm" onclick="confirmRegenerate('${h.id}', '${escHtml(h.title).replace(/'/g,"\\'")}')"><i class="ph ph-arrow-clockwise"></i> Regenerate</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteHandout('${h.id}', '${escHtml(h.title).replace(/'/g,"\\'")}')"><i class="ph ph-trash"></i> Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function confirmDeleteHandout(id, title){
+  openConfirm(
+    "Delete this handout?",
+    `"${title}" will be permanently deleted, along with its images, upvotes, bookmarks, and chat history. This can't be undone.`,
+    async ()=>{
+      const { error } = await sb.from('handouts').delete().eq('id', id);
+      if(error) throw new Error(error.message);
+      allHandouts = allHandouts.filter(h => h.id !== id);
+      renderHandoutsList();
+      toast({type:"success", message:"Handout deleted."});
+      dashboardLoaded = false;
+    }
+  );
+}
+
+function confirmRegenerate(id, title){
+  openConfirm(
+    "Regenerate summary?",
+    `This will re-run AI processing for "${title}" and overwrite its existing summary and extracted text once complete.`,
+    async ()=>{
+      try{
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch(SUPABASE_URL + "/functions/v1/process-handout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + (session ? session.access_token : SUPABASE_ANON_KEY),
+            "apikey": SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ handout_id: id }),
+        });
+        if(!res.ok) throw new Error("Edge function returned " + res.status);
+        toast({type:"success", message:"Regeneration triggered — this runs in the background."});
+      }catch(err){
+        throw new Error("Couldn't trigger regeneration: " + err.message);
+      }
+    },
+    false
+  );
+}
+
+/* ============================================================
+   TAB 4: MANAGE USERS
+   ============================================================ */
+let allStudents = [];
+
+async function loadUsers(){
+  $("#usersLoading").classList.remove("hidden");
+  $("#usersList").classList.add("hidden");
+  $("#usersEmpty").classList.add("hidden");
+  $("#usersError").classList.add("hidden");
+
+  try{
+    const { data, error } = await sb
+      .from('profiles')
+      .select('id, full_name, matric_number, email, phone, level, total_uploads, total_upvotes_received, total_views_received, departments(name)')
+      .eq('role', 'student')
+      .order('full_name');
+    if(error) throw error;
+
+    allStudents = data || [];
+    usersLoaded = true;
+    $("#usersLoading").classList.add("hidden");
+    renderUsersList();
+  }catch(err){
+    $("#usersLoading").classList.add("hidden");
+    $("#usersError").classList.remove("hidden");
+  }
+}
+
+function renderUsersList(){
+  const q = ($("#userSearch").value || "").trim().toLowerCase();
+  const filtered = !q ? allStudents : allStudents.filter(u =>
+    (u.full_name||"").toLowerCase().includes(q) ||
+    (u.matric_number||"").toLowerCase().includes(q)
+  );
+
+  if(filtered.length === 0){
+    $("#usersList").classList.add("hidden");
+    $("#usersEmpty").classList.remove("hidden");
+    return;
+  }
+  $("#usersEmpty").classList.add("hidden");
+  $("#usersList").classList.remove("hidden");
+  $("#usersList").innerHTML = filtered.map(u => `
+    <div class="row-card">
+      <div class="rc-title">${escHtml(u.full_name || "Unnamed student")}</div>
+      <div class="rc-sub">${escHtml(u.matric_number || "No matric number")} · ${escHtml(u.departments ? u.departments.name : "—")} · ${escHtml(u.level || "—")}</div>
+      <div class="rc-meta">
+        <span>${escHtml(u.email || "—")}</span>
+        <span>${escHtml(u.phone || "—")}</span>
+        <span><i class="ph ph-upload-simple"></i> ${u.total_uploads||0}</span>
+        <span><i class="ph ph-arrow-fat-up"></i> ${u.total_upvotes_received||0}</span>
+        <span><i class="ph ph-eye"></i> ${u.total_views_received||0}</span>
+      </div>
+      <div class="rc-actions">
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.id}', '${escHtml(u.full_name||"this student").replace(/'/g,"\\'")}')"><i class="ph ph-trash"></i> Delete profile</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function confirmDeleteUser(id, name){
+  openConfirm(
+    "Delete this student's profile?",
+    `This removes ${name}'s app profile and their bookmarks, upvotes, and chat history. Note: this does NOT delete their login account — full account deletion requires separate backend action outside this panel.`,
+    async ()=>{
+      const { error } = await sb.from('profiles').delete().eq('id', id);
+      if(error) throw new Error(error.message);
+      allStudents = allStudents.filter(u => u.id !== id);
+      renderUsersList();
+      toast({type:"success", message:"Student profile deleted."});
+      dashboardLoaded = false;
+    }
+  );
+}
+
+/* ============================================================
+   INIT — admin-only auth gate
+   ============================================================ */
+async function initAdminDashboard(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){
+    window.location.href = "index.html";
+    return;
+  }
+
+  try{
+    const { data: profile, error } = await sb
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', session.user.id)
+      .single();
+    if(error) throw error;
+
+    if(!profile || profile.role !== 'admin'){
+      window.location.href = "index.html";
+      return;
+    }
+
+    $("#adminNameHero").textContent = profile.full_name || "Admin";
+    loadDashboard();
+    document.body.style.visibility = "visible";
+  }catch(err){
+    window.location.href = "index.html";
+  }
+}
+
+sb.auth.onAuthStateChange((event, session)=>{
+  if(event === "SIGNED_OUT" || !session){
+    window.location.href = "index.html";
+  }
+});
+
+initAdminDashboard();
+</script>
+</body>
+</html>
